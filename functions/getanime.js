@@ -110,7 +110,7 @@ async function getsearchembed(animedata, numEmbed, numPage, maxLength) {
       name: `Result ${numPage*numEmbed+i+1}/${maxLength}`,
     })
     .setTitle(anime.title.english != null ? anime.title.english : anime.title.romaji)
-    .setURL("https://example.com")
+    // .setURL("https://example.com")
     .addFields(
       {
         name: "**                                                                                                                                          **",
@@ -118,10 +118,10 @@ async function getsearchembed(animedata, numEmbed, numPage, maxLength) {
         inline: false
       },
     )
-    .setThumbnail("https://cubedhuang.com/images/alex-knight-unsplash.webp")
+    .setThumbnail(anime.coverImage.large)
     .setColor("#00b0f4")
     .setFooter({
-      text: "Example Footer",
+      text: `Released in ${anime.season} ${anime.seasonYear}`,
     });
     }
 }
