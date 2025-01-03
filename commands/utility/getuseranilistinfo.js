@@ -1,5 +1,3 @@
-const fetch = require('node-fetch'); // Use this in Node.js. In the browser, `fetch` is built-in.
-
 async function getUserData(username) {
   const url = 'https://graphql.anilist.co';
   
