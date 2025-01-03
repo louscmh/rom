@@ -174,8 +174,6 @@ async function checkForUpdates(user, channelId, client) {
 	await channel.send({ content: "** **", embeds: [], components: [] });
 	console.log(`Update for ${user.username} performed`);
 
-
-
 }
 
 async function scan(client) {
@@ -188,7 +186,7 @@ async function scan(client) {
 
 	const trackedUsers = await TrackedUser.findAll();
 
-	console.log(`users: ${JSON.stringify(trackedUsers.map(user => user.toJSON()))}`);
+	console.log(`users: ${JSON.stringify(trackedUsers)}`);
 
 	for (let i = 0; i <= trackedUsers.length - 1; i++) {
 		console.log("Initial check happened");
