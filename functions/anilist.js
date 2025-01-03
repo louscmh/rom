@@ -1,5 +1,3 @@
-const fetch = require('node-fetch');
-
 async function getUserActivities(userId, page = 1, perPage = 9) {
   const url = 'https://graphql.anilist.co';
 
