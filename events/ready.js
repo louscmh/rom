@@ -126,9 +126,9 @@ async function checkForUpdates(user, channelId, client) {
 			let embed = new EmbedBuilder()
 				.setColor(0x1E90FF)
 				.setThumbnail(latestActivity.media.coverImage.medium)
-				.setTitle(latestActivity.media.title.english)
+				.setTitle(latestActivity.progress.includes("-") ? "Watched episodes" : "Watched an episode")
 				.addFields(
-					{ name: 'Episode Watched:', value: `${latestActivity.progress}/${latestActivity.media.episodes}`, inline: true },
+					{ name: latestActivity.media.title.english, value: `**Episodes:** ${latestActivity.progress}/${latestActivity.media.episodes}`, inline: true },
 					{ name: 'Time of Activity:', value: `<t:${Math.floor(latestActivity.createdAt)}:R>`, inline: false },
 				)
 			let appendedString = `\`\`\`Title: ${latestActivity.media.title.romaji || latestActivity.media.title.english}\nProgress: ${latestActivity.progress}\nStatus: ${latestActivity.status}\`\`\``;
@@ -140,9 +140,24 @@ async function checkForUpdates(user, channelId, client) {
 			let embed = new EmbedBuilder()
 				.setColor(0x2FBB2F)
 				.setThumbnail(latestActivity.media.coverImage.medium) 
-				.setTitle(latestActivity.media.title.english)
+				.setTitle("Completed Anime")
 				.addFields(
-					{ name: 'Anime Completed', value: `${latestActivity.media.episodes}/${latestActivity.media.episodes}`, inline: true },
+					{ name: latestActivity.media.title.english, value: `**Episodes:** ${latestActivity.media.episodes}/${latestActivity.media.episodes}`, inline: true },
+					{ name: 'Time of Activity:', value: `<t:${Math.floor(latestActivity.createdAt)}:R>`, inline: false },
+				)
+
+			// Send the update to the Discord channel
+			let appendedString = `\`\`\`Title: ${latestActivity.media.title.romaji || latestActivity.media.title.english}\nProgress: ${latestActivity.progress}\nStatus: ${latestActivity.status}\`\`\``;
+			finalString += appendedString;
+			finalEmbeds.push(embed);
+		} else if (latestActivity.status == "plans to watch") {
+
+			let embed = new EmbedBuilder()
+				.setColor(0xFFFF00)
+				.setThumbnail(latestActivity.media.coverImage.medium) 
+				.setTitle("Plan to watch")
+				.addFields(
+					{ name: latestActivity.media.title.english, value: `**Episodes:** 0/${latestActivity.media.episodes}`, inline: true },
 					{ name: 'Time of Activity:', value: `<t:${Math.floor(latestActivity.createdAt)}:R>`, inline: false },
 				)
 
