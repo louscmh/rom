@@ -99,7 +99,6 @@ async function checkForUpdates(user, channelId, client) {
 	console.log(`Update count: ${latestActivityIndex == 0 ? 0 : latestActivityIndex+1}`);
 	if (latestActivityIndex === 0) return;
 
-	let finalString = "";
 	let finalEmbeds = [];
 
 	let top = new EmbedBuilder()
@@ -122,17 +121,16 @@ async function checkForUpdates(user, channelId, client) {
 		}
 
 		if (latestActivity.status == "watched episode") {
+			console.log(latestActivity);
 
 			let embed = new EmbedBuilder()
 				.setColor(0x1E90FF)
 				.setThumbnail(latestActivity.media.coverImage.medium)
 				.setTitle(latestActivity.progress.includes("-") ? "Watched episodes" : "Watched an episode")
 				.addFields(
-					{ name: latestActivity.media.title.english, value: `**Episodes:** ${latestActivity.progress}/${latestActivity.media.episodes}`, inline: true },
+					{ name: latestActivity.media.title.english ?? latestActivity.media.title.romaji, value: `**Episodes:** ${latestActivity.progress}/${latestActivity.media.episodes}`, inline: true },
 					{ name: 'Time of Activity:', value: `<t:${Math.floor(latestActivity.createdAt)}:R>`, inline: false },
 				)
-			let appendedString = `\`\`\`Title: ${latestActivity.media.title.romaji || latestActivity.media.title.english}\nProgress: ${latestActivity.progress}\nStatus: ${latestActivity.status}\`\`\``;
-			finalString += appendedString;
 			finalEmbeds.push(embed);
 
 		} else if (latestActivity.status == "completed") {
@@ -145,10 +143,6 @@ async function checkForUpdates(user, channelId, client) {
 					{ name: latestActivity.media.title.english, value: `**Episodes:** ${latestActivity.media.episodes}/${latestActivity.media.episodes}`, inline: true },
 					{ name: 'Time of Activity:', value: `<t:${Math.floor(latestActivity.createdAt)}:R>`, inline: false },
 				)
-
-			// Send the update to the Discord channel
-			let appendedString = `\`\`\`Title: ${latestActivity.media.title.romaji || latestActivity.media.title.english}\nProgress: ${latestActivity.progress}\nStatus: ${latestActivity.status}\`\`\``;
-			finalString += appendedString;
 			finalEmbeds.push(embed);
 		} else if (latestActivity.status == "plans to watch") {
 
@@ -160,10 +154,6 @@ async function checkForUpdates(user, channelId, client) {
 					{ name: latestActivity.media.title.english, value: `**Episodes:** 0/${latestActivity.media.episodes}`, inline: true },
 					{ name: 'Time of Activity:', value: `<t:${Math.floor(latestActivity.createdAt)}:R>`, inline: false },
 				)
-
-			// Send the update to the Discord channel
-			let appendedString = `\`\`\`Title: ${latestActivity.media.title.romaji || latestActivity.media.title.english}\nProgress: ${latestActivity.progress}\nStatus: ${latestActivity.status}\`\`\``;
-			finalString += appendedString;
 			finalEmbeds.push(embed);
 		}
 	}

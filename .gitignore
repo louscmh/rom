@@ -3,3 +3,4 @@ config_1.json
 node_modules/
 database.sqlite
 package-lock.json
+backup/
