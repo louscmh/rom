@@ -179,7 +179,7 @@ async function createanimeembed(anime,compareUser) {
     .setDescription(`• **Average Score:** ${anime.meanScore}/100
       • **Episodes:** ${anime.episodes}
       ${anime.season == null ? `• **Released in:** N.A` : `• **Released in:** ${anime.season.charAt(0).toUpperCase() + anime.season.slice(1).toLowerCase()} ${anime.seasonYear}`}
-      • **Genres:** ${anime.genres.length == 0 ? "N.A" : anime.genres.length > 1 ? anime.genres.join(", ") : anime.genres[0]}}
+      • **Genres:** ${anime.genres.length == 0 ? "N.A" : anime.genres.length > 1 ? anime.genres.join(", ") : anime.genres[0]}
       • **Main Studio:** ${anime.studios.nodes.length > 0 ? anime.studios.nodes[0].name : "N.A"}
       • **Format:** ${anime.format ?? "N.A"}`)
     .setThumbnail(anime.coverImage.large)
