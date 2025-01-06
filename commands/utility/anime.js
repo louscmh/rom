@@ -20,7 +20,6 @@ module.exports = {
         const listlength = await getanimesearchlength(anime);
         let animeCount = listlength > 3 ? 3 : listlength;
         console.log(animedata);
-        console.log(listlength);
         console.log(`Amount of anime: ${listlength}`);
 
         if (!animedata) {
@@ -34,14 +33,12 @@ module.exports = {
         } else {
             let [finalEmbeds, buttons] = await getsearchembed(animedata, animeCount, currentPage, listlength);
 
-            console.log("happened");
             let response = await interaction.editReply({content: "Displaying search results:", embeds: finalEmbeds, components: [buttons]});
             const collectorFilter = i => i.user.id === interaction.user.id;
 
             while (true) {
 
                 try {
-                    console.log("happened2");
                     let confirmation = await response.awaitMessageComponent({ filter: collectorFilter, time: 45_000 });
                     await confirmation.deferUpdate();
 
@@ -58,7 +55,6 @@ module.exports = {
                         [finalEmbeds, buttons] = await getsearchembed(animedata, animeCount, currentPage, listlength);
                         response = await interaction.editReply({content: "Displaying search results:", embeds: finalEmbeds, components: [buttons]});
                     } else if (/\d/.test(confirmation.customId)) {
-                        console.log("happened3");
                         let index = confirmation.customId.replace(/\D/g, '');
                         let displayAnime = animedata.media[index-1];
                         finalEmbeds = await createanimeembed(displayAnime,interaction.guild.id);

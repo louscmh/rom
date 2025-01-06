@@ -24,6 +24,7 @@ async function searchanimebytitle(anime, page = 1) {
         genres
         format
         favourites
+        popularity
         averageScore
         rankings {
           rank
@@ -145,7 +146,7 @@ async function getsearchembed(animedata, numEmbed, numPage, maxLength) {
     .addFields(
       { name: 'Community Score', value: `${anime.averageScore}/100`, inline: true },
       { name: 'Episodes', value: `${anime.episodes}`, inline: true },
-      { name: 'Genres', value: `${anime.genres.join(", ")}`, inline: false },
+      { name: 'Genres', value: `${anime.genres.length > 1 ? anime.genres.join(", ") : anime.genres[0]}`, inline: false },
     )
     .setFooter({
       text: anime.season != null ? `Released in ${anime.season.charAt(0).toUpperCase() + anime.season.slice(1).toLowerCase()} ${anime.seasonYear} · ${anime.siteUrl}` : `No season data · ${anime.siteUrl}`,
@@ -180,10 +181,10 @@ async function createanimeembed(anime,compareUser) {
     • **Genres:** ${anime.genres.join(", ")}
     • **Main Studio:** ${anime.studios.nodes[0].name}
     • **Format:** ${anime.format}`)
-  .setThumbnail("https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx21584-Gg3LO3QETRGK.jpg")
+  .setThumbnail(anime.coverImage.large)
   .setColor("#00b0f4")
   .setFooter({
-    text: "1402 ❤️ 52931 👀",
+    text: `${anime.favourites} ❤️ ${anime.popularity} 👀`,
   })
   .setTimestamp();
 
@@ -199,20 +200,21 @@ async function createanimeembed(anime,compareUser) {
     for (let i = 0; i <= trackedUsers.length - 1; i++) {
       let user = trackedUsers[i];
       let userScore = await getanimescore(anime.id,user.userId);
-      if (userScore != 0) {
+      if (userScore.score != 0 && userScore.score != null) {
         userString += `${user.username} - \`${userScore.score}/${userScore.score < 11 ? 10 : 100}\`\n`
       }
     }
 
-    embed.addFields(
-      {
-        name: "Server Scores",
-        value: userString,
-        inline: true
-      }
-    )
+    if (userString != "") {
+      embed.addFields(
+        {
+          name: "Server Scores",
+          value: userString,
+          inline: true
+        }
+      )
+    }
   }
-  console.log(embed);
   // embed.addFields(
   //   {
   //     name: "Rankings",
