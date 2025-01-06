@@ -132,7 +132,7 @@ async function checkForUpdates(user, channelId, client) {
 		// console.log(animedata);
 
 		if (i == 0) {
-			// user.lastReadActivity = latestActivity.createdAt;
+			user.lastReadActivity = latestActivity.createdAt;
 			await user.save();
 		}
 
@@ -146,7 +146,7 @@ async function checkForUpdates(user, channelId, client) {
 				.addFields(
 					{ name: latestActivity.media.title.english ?? latestActivity.media.title.romaji ?? latestActivity.media.title.native, value: `**Episodes:** ${latestActivity.progress}/${latestActivity.media.episodes}`, inline: true },
 					{ name: 'Time of Activity', value: `<t:${Math.floor(latestActivity.createdAt)}:R>`, inline: false },
-					{ name: 'Community Score', value: `${latestActivity.media.averageScore}`, inline: false },
+					{ name: 'Community Score', value: `${latestActivity.media.averageScore}/100`, inline: false },
 					{ name: 'Genres', value: `${latestActivity.media.genres.join(", ")}`, inline: false },
 				)
 				.setFooter({
@@ -164,7 +164,7 @@ async function checkForUpdates(user, channelId, client) {
 					{ name: latestActivity.media.title.english ?? latestActivity.media.title.romaji ?? latestActivity.media.title.native, value: `**Episodes:** ${latestActivity.media.episodes}/${latestActivity.media.episodes}`, inline: true },
 					{ name: 'Time of Activity', value: `<t:${Math.floor(latestActivity.createdAt)}:R>`, inline: false },
 					{ name: 'Score Given', value: `${animedata.score}`, inline: true },
-					{ name: 'Community Score', value: `${latestActivity.media.averageScore}`, inline: true },
+					{ name: 'Community Score', value: `${latestActivity.media.averageScore}/100`, inline: true },
 					{ name: 'Genres', value: `${latestActivity.media.genres.join(", ")}`, inline: false },
 				)
 				.setFooter({
@@ -180,7 +180,7 @@ async function checkForUpdates(user, channelId, client) {
 				.addFields(
 					{ name: latestActivity.media.title.english ?? latestActivity.media.title.romaji ?? latestActivity.media.title.native, value: `**Episodes:** 0/${latestActivity.media.episodes}`, inline: true },
 					{ name: 'Time of Activity', value: `<t:${Math.floor(latestActivity.createdAt)}:R>`, inline: false },
-					{ name: 'Community Score', value: `${latestActivity.media.averageScore}`, inline: false },
+					{ name: 'Community Score', value: `${latestActivity.media.averageScore}/100`, inline: false },
 					{ name: 'Genres', value: `${latestActivity.media.genres.join(", ")}`, inline: false },
 				)
 				.setFooter({
