@@ -170,7 +170,6 @@ async function getsearchembed(animedata, numEmbed, numPage, maxLength) {
 }
 
 async function createanimeembed(anime,compareUser) {
-  console.log("happened 2");
   try {
     let embed = new EmbedBuilder()
     .setAuthor({
@@ -189,11 +188,9 @@ async function createanimeembed(anime,compareUser) {
       text: `${anime.favourites} ❤️ ${anime.popularity} 👀`,
     })
     .setTimestamp();
-    console.log("happened 3");
 
     if (compareUser != null) {
       let userString = "";
-      console.log("happened 4");
       
       const trackedUsers = await TrackedUser.findAll({
         where: {
@@ -208,7 +205,6 @@ async function createanimeembed(anime,compareUser) {
           userString += `${user.username} - \`${userScore.score}/${userScore.score < 11 ? 10 : 100}\`\n`
         }
       }
-      console.log("happened 5");
 
       if (userString != "") {
         embed.addFields(
