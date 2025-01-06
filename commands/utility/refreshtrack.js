@@ -7,6 +7,8 @@ module.exports = {
 		.setName('refreshtrack')
 		.setDescription('Refreshes the tracking system instantly'),
 	async execute(interaction) {
-		scan(interaction.client);
+        await interaction.deferReply();
+		await scan(interaction.client);
+		return;
 	},
 };

@@ -146,8 +146,8 @@ async function checkForUpdates(user, channelId, client) {
 				.addFields(
 					{ name: latestActivity.media.title.english ?? latestActivity.media.title.romaji ?? latestActivity.media.title.native, value: `**Episodes:** ${latestActivity.progress}/${latestActivity.media.episodes}`, inline: true },
 					{ name: 'Time of Activity', value: `<t:${Math.floor(latestActivity.createdAt)}:R>`, inline: false },
-					{ name: 'Community Score', value: `${latestActivity.media.averageScore}/100`, inline: false },
-					{ name: 'Genres', value: `${latestActivity.media.genres.join(", ")}`, inline: false },
+					{ name: 'Community Score', value: `${latestActivity.media.meanScore}/100`, inline: false },
+					{ name: 'Genres', value: `${latestActivity.media.genres.length == 0 ? "N.A" : latestActivity.media.genres.length > 1 ? latestActivity.media.genres.join(", ") : latestActivity.media.genres[0]}`, inline: false },
 				)
 				.setFooter({
 					text: latestActivity.media.season != null ? `Released in ${latestActivity.media.season.charAt(0).toUpperCase() + latestActivity.media.season.slice(1).toLowerCase()} ${latestActivity.media.seasonYear} · ${latestActivity.media.siteUrl}` : `No season data · ${latestActivity.media.siteUrl}`,
@@ -164,8 +164,8 @@ async function checkForUpdates(user, channelId, client) {
 					{ name: latestActivity.media.title.english ?? latestActivity.media.title.romaji ?? latestActivity.media.title.native, value: `**Episodes:** ${latestActivity.media.episodes}/${latestActivity.media.episodes}`, inline: true },
 					{ name: 'Time of Activity', value: `<t:${Math.floor(latestActivity.createdAt)}:R>`, inline: false },
 					{ name: 'Score Given', value: `${animedata.score}`, inline: true },
-					{ name: 'Community Score', value: `${latestActivity.media.averageScore}/100`, inline: true },
-					{ name: 'Genres', value: `${latestActivity.media.genres.join(", ")}`, inline: false },
+					{ name: 'Community Score', value: `${latestActivity.media.meanScore}/100`, inline: true },
+					{ name: 'Genres', value: `${latestActivity.media.genres.length == 0 ? "N.A" : latestActivity.media.genres.length > 1 ? latestActivity.media.genres.join(", ") : latestActivity.media.genres[0]}`, inline: false },
 				)
 				.setFooter({
 					text: latestActivity.media.season != null ? `Released in ${latestActivity.media.season.charAt(0).toUpperCase() + latestActivity.media.season.slice(1).toLowerCase()} ${latestActivity.media.seasonYear} · ${latestActivity.media.siteUrl}` : `No season data · ${latestActivity.media.siteUrl}`,
@@ -180,8 +180,8 @@ async function checkForUpdates(user, channelId, client) {
 				.addFields(
 					{ name: latestActivity.media.title.english ?? latestActivity.media.title.romaji ?? latestActivity.media.title.native, value: `**Episodes:** 0/${latestActivity.media.episodes}`, inline: true },
 					{ name: 'Time of Activity', value: `<t:${Math.floor(latestActivity.createdAt)}:R>`, inline: false },
-					{ name: 'Community Score', value: `${latestActivity.media.averageScore}/100`, inline: false },
-					{ name: 'Genres', value: `${latestActivity.media.genres.join(", ")}`, inline: false },
+					{ name: 'Community Score', value: `${latestActivity.media.meanScore}/100`, inline: false },
+					{ name: 'Genres', value: `${latestActivity.media.genres.length == 0 ? "N.A" : latestActivity.media.genres.length > 1 ? latestActivity.media.genres.join(", ") : latestActivity.media.genres[0]}`, inline: false },
 				)
 				.setFooter({
 				  text: latestActivity.media.season != null ? `Released in ${latestActivity.media.season.charAt(0).toUpperCase() + latestActivity.media.season.slice(1).toLowerCase()} ${latestActivity.media.seasonYear} · ${latestActivity.media.siteUrl}` : `No season data · ${latestActivity.media.siteUrl}`,

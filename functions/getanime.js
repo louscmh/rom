@@ -25,7 +25,7 @@ async function searchanimebytitle(anime, page = 1) {
         format
         favourites
         popularity
-        averageScore
+        meanScore
         rankings {
           rank
           type
@@ -144,9 +144,9 @@ async function getsearchembed(animedata, numEmbed, numPage, maxLength) {
     .setThumbnail(anime.coverImage.large)
     .setColor("#00b0f4")
     .addFields(
-      { name: 'Community Score', value: `${anime.averageScore}/100`, inline: true },
+      { name: 'Community Score', value: `${anime.meanScore}/100`, inline: true },
       { name: 'Episodes', value: `${anime.episodes}`, inline: true },
-      { name: 'Genres', value: `${anime.genres.length > 1 ? anime.genres.join(", ") : anime.genres[0]}`, inline: false },
+      { name: 'Genres', value: `${anime.genres.length == 0 ? "N.A" : anime.genres.length > 1 ? anime.genres.join(", ") : anime.genres[0]}`, inline: false },
     )
     .setFooter({
       text: anime.season != null ? `Released in ${anime.season.charAt(0).toUpperCase() + anime.season.slice(1).toLowerCase()} ${anime.seasonYear} · ${anime.siteUrl}` : `No season data · ${anime.siteUrl}`,
@@ -170,60 +170,69 @@ async function getsearchembed(animedata, numEmbed, numPage, maxLength) {
 }
 
 async function createanimeembed(anime,compareUser) {
-  let embed = new EmbedBuilder()
-  .setAuthor({
-    name: anime.title.english != null ? anime.title.english : anime.title.romaji,
-    url: anime.siteUrl,
-  })
-  .setDescription(`• **Average Score:** ${anime.averageScore}/100
-    • **Episodes:** ${anime.episodes}
-    • **Released in:** ${anime.season.charAt(0).toUpperCase() + anime.season.slice(1).toLowerCase()} ${anime.seasonYear}
-    • **Genres:** ${anime.genres.join(", ")}
-    • **Main Studio:** ${anime.studios.nodes[0].name}
-    • **Format:** ${anime.format}`)
-  .setThumbnail(anime.coverImage.large)
-  .setColor("#00b0f4")
-  .setFooter({
-    text: `${anime.favourites} ❤️ ${anime.popularity} 👀`,
-  })
-  .setTimestamp();
+  console.log("happened 2");
+  try {
+    let embed = new EmbedBuilder()
+    .setAuthor({
+      name: anime.title.english != null ? anime.title.english : anime.title.romaji,
+      url: anime.siteUrl,
+    })
+    .setDescription(`• **Average Score:** ${anime.meanScore}/100
+      • **Episodes:** ${anime.episodes}
+      ${anime.season == null ? `• **Released in:** N.A` : `• **Released in:** ${anime.season.charAt(0).toUpperCase() + anime.season.slice(1).toLowerCase()} ${anime.seasonYear}`}
+      • **Genres:** ${anime.genres.length == 0 ? "N.A" : anime.genres.length > 1 ? anime.genres.join(", ") : anime.genres[0]}}
+      • **Main Studio:** ${anime.studios.nodes.length > 0 ? anime.studios.nodes[0].name : "N.A"}
+      • **Format:** ${anime.format ?? "N.A"}`)
+    .setThumbnail(anime.coverImage.large)
+    .setColor("#00b0f4")
+    .setFooter({
+      text: `${anime.favourites} ❤️ ${anime.popularity} 👀`,
+    })
+    .setTimestamp();
+    console.log("happened 3");
 
-  if (compareUser != null) {
-    let userString = "";
-    
-		const trackedUsers = await TrackedUser.findAll({
-			where: {
-				serverId: compareUser
-			}
-		});
+    if (compareUser != null) {
+      let userString = "";
+      console.log("happened 4");
+      
+      const trackedUsers = await TrackedUser.findAll({
+        where: {
+          serverId: compareUser
+        }
+      });
 
-    for (let i = 0; i <= trackedUsers.length - 1; i++) {
-      let user = trackedUsers[i];
-      let userScore = await getanimescore(anime.id,user.userId);
-      if (userScore.score != 0 && userScore.score != null) {
-        userString += `${user.username} - \`${userScore.score}/${userScore.score < 11 ? 10 : 100}\`\n`
+      for (let i = 0; i <= trackedUsers.length - 1; i++) {
+        let user = trackedUsers[i];
+        let userScore = await getanimescore(anime.id,user.userId);
+        if (userScore.score != 0 && userScore.score != null) {
+          userString += `${user.username} - \`${userScore.score}/${userScore.score < 11 ? 10 : 100}\`\n`
+        }
+      }
+      console.log("happened 5");
+
+      if (userString != "") {
+        embed.addFields(
+          {
+            name: "Server Scores",
+            value: userString,
+            inline: true
+          }
+        )
       }
     }
+    // embed.addFields(
+    //   {
+    //     name: "Rankings",
+    //     value: `• Rating: #${anime.rankings[]} (2016), #12 (Season)\n• Popularity: #56 (2016), #18 (Season)`,
+    //     inline: false
+    //   }
+    // )
 
-    if (userString != "") {
-      embed.addFields(
-        {
-          name: "Server Scores",
-          value: userString,
-          inline: true
-        }
-      )
-    }
+    return embed;
+  } catch (e) {
+    console.error('Error fetching data:', e);
+    return [];
   }
-  // embed.addFields(
-  //   {
-  //     name: "Rankings",
-  //     value: `• Rating: #${anime.rankings[]} (2016), #12 (Season)\n• Popularity: #56 (2016), #18 (Season)`,
-  //     inline: false
-  //   }
-  // )
-
-  return embed;
 }
 
 // Export the function

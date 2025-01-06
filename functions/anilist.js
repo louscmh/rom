@@ -30,6 +30,7 @@ async function getUserActivities(userId, page = 1, perPage = 9) {
               season
               genres
               averageScore
+              meanScore
               siteUrl
               id
             }

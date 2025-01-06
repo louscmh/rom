@@ -58,6 +58,7 @@ module.exports = {
                         let index = confirmation.customId.replace(/\D/g, '');
                         let displayAnime = animedata.media[index-1];
                         finalEmbeds = await createanimeembed(displayAnime,interaction.guild.id);
+                        console.log("happened 1");
                         await interaction.editReply({content: "", embeds: [finalEmbeds], components: []});
                         return;
                     }
