@@ -11,6 +11,11 @@ const sequelize = new Sequelize('database', 'user', 'password', {
 });
 
 const TrackedUser = sequelize.define('TrackedUser', {
+    id: {
+        type: DataTypes.INTEGER,
+        primaryKey: true,
+        autoIncrement: true, // Automatically increment the ID
+    },
 	userId: {
 		type: DataTypes.STRING,
 		allowNull: false,
@@ -32,6 +37,11 @@ const TrackedUser = sequelize.define('TrackedUser', {
 });
 
 const TrackedServer = sequelize.define('TrackedServer', {
+    id: {
+        type: DataTypes.INTEGER,
+        primaryKey: true,
+        autoIncrement: true, // Automatically increment the ID
+    },
 	serverId: {
 		type: DataTypes.STRING,
 		allowNull: false,
@@ -86,6 +96,7 @@ async function checkForUpdates(user, channelId, client) {
 	const avatar = userdata.avatar.large;
 	const activities = await getUserActivities(userId);
 	let latestActivityIndex = 0;
+	await delay(1000);
 
 	if (activities.length === 0) return;
 
@@ -116,6 +127,7 @@ async function checkForUpdates(user, channelId, client) {
 	for (let i = latestActivityIndex - 1; i >= 0; i--) {
 		let latestActivity = activities[i];
 		let animedata = await getanimescore(latestActivity.media.id, userId)
+		await delay(1000);
 		// console.log(animedata);
 
 		if (i == 0) {
@@ -123,7 +135,7 @@ async function checkForUpdates(user, channelId, client) {
 			await user.save();
 		}
 
-		if (latestActivity.status == "watched episode") {
+		if (latestActivity.status == "watched episode" && latestActivity.createdAt != null) {
 			// console.log(latestActivity);
 			
 			let embed = new EmbedBuilder()
@@ -131,7 +143,7 @@ async function checkForUpdates(user, channelId, client) {
 				.setThumbnail(latestActivity.media.coverImage.large)
 				.setTitle(latestActivity.progress.includes("-") ? "Watched episodes" : "Watched an episode")
 				.addFields(
-					{ name: latestActivity.media.title.english ?? latestActivity.media.title.romaji, value: `**Episodes:** ${latestActivity.progress}/${latestActivity.media.episodes}`, inline: true },
+					{ name: latestActivity.media.title.english ?? latestActivity.media.title.romaji ?? latestActivity.media.title.native, value: `**Episodes:** ${latestActivity.progress}/${latestActivity.media.episodes}`, inline: true },
 					{ name: 'Time of Activity', value: `<t:${Math.floor(latestActivity.createdAt)}:R>`, inline: false },
 					{ name: 'Community Score', value: `${latestActivity.media.averageScore}`, inline: false },
 					{ name: 'Genres', value: `${latestActivity.media.genres.join(", ")}`, inline: false },
@@ -141,14 +153,14 @@ async function checkForUpdates(user, channelId, client) {
 				});
 			finalEmbeds.push(embed);
 
-		} else if (latestActivity.status == "completed") {
+		} else if (latestActivity.status == "completed" && latestActivity.createdAt != null) {
 
 			let embed = new EmbedBuilder()
 				.setColor(0x2FBB2F)
 				.setThumbnail(latestActivity.media.coverImage.large) 
 				.setTitle("Completed Anime")
 				.addFields(
-					{ name: latestActivity.media.title.english, value: `**Episodes:** ${latestActivity.media.episodes}/${latestActivity.media.episodes}`, inline: true },
+					{ name: latestActivity.media.title.english ?? latestActivity.media.title.romaji ?? latestActivity.media.title.native, value: `**Episodes:** ${latestActivity.media.episodes}/${latestActivity.media.episodes}`, inline: true },
 					{ name: 'Time of Activity', value: `<t:${Math.floor(latestActivity.createdAt)}:R>`, inline: false },
 					{ name: 'Score Given', value: `${animedata.score}`, inline: true },
 					{ name: 'Community Score', value: `${latestActivity.media.averageScore}`, inline: true },
@@ -158,14 +170,14 @@ async function checkForUpdates(user, channelId, client) {
 					text: latestActivity.media.season != null ? `Released in ${latestActivity.media.season.charAt(0).toUpperCase() + latestActivity.media.season.slice(1).toLowerCase()} ${latestActivity.media.seasonYear} · ${latestActivity.media.siteUrl}` : `No season data · ${latestActivity.media.siteUrl}`,
 				});
 			finalEmbeds.push(embed);
-		} else if (latestActivity.status == "plans to watch") {
+		} else if (latestActivity.status == "plans to watch" && latestActivity.createdAt != null) {
 
 			let embed = new EmbedBuilder()
 				.setColor(0xFFFF00)
 				.setThumbnail(latestActivity.media.coverImage.large) 
 				.setTitle("Plan to watch")
 				.addFields(
-					{ name: latestActivity.media.title.english, value: `**Episodes:** 0/${latestActivity.media.episodes}`, inline: true },
+					{ name: latestActivity.media.title.english ?? latestActivity.media.title.romaji ?? latestActivity.media.title.native, value: `**Episodes:** 0/${latestActivity.media.episodes}`, inline: true },
 					{ name: 'Time of Activity', value: `<t:${Math.floor(latestActivity.createdAt)}:R>`, inline: false },
 					{ name: 'Community Score', value: `${latestActivity.media.averageScore}`, inline: false },
 					{ name: 'Genres', value: `${latestActivity.media.genres.join(", ")}`, inline: false },
@@ -175,8 +187,6 @@ async function checkForUpdates(user, channelId, client) {
 				});
 			finalEmbeds.push(embed);
 		}
-
-		await delay(500);
 	}
 
 	console.log(`channel id to send: ${channelId}`)

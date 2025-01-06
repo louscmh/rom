@@ -20,6 +20,7 @@ async function getUserActivities(userId, page = 1, perPage = 9) {
               title {
                 romaji
                 english
+                native
               }
               coverImage {
                 large
