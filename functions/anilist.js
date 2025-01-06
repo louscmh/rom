@@ -22,9 +22,14 @@ async function getUserActivities(userId, page = 1, perPage = 9) {
                 english
               }
               coverImage {
-                medium
+                large
               }
               episodes
+              seasonYear
+              season
+              genres
+              averageScore
+              siteUrl
             }
           }
         }
@@ -58,6 +63,50 @@ async function getUserActivities(userId, page = 1, perPage = 9) {
 
     if (response.ok) {
       return data.data.Page.activities; // Return activities
+    } else {
+      console.error('Error:', data);
+      return [];
+    }
+  } catch (error) {
+    console.error('Error fetching data:', error);
+    return [];
+  }
+}
+
+async function getanimescore(animeid, userid) {
+  const url = 'https://graphql.anilist.co';
+
+  const query = `
+    query MediaList($userId: Int, $mediaId: Int) {
+    MediaList(userId: $userId, mediaId: $mediaId) {
+      score
+    }
+  }
+  `;
+
+  const variables = {
+    "userId": userid,
+    "mediaId": animeid
+  };
+
+  const options = {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    },
+    body: JSON.stringify({
+      query: query,
+      variables: variables,
+    }),
+  };
+
+  try {
+    const response = await fetch(url, options);
+    const data = await response.json();
+
+    if (response.ok) {
+      return data.data.MediaList; 
     } else {
       console.error('Error:', data);
       return [];
@@ -188,4 +237,5 @@ module.exports = {
   getUserActivity,
   getUserData,
   getUserActivities,
+  getanimescore,
 };
