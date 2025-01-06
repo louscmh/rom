@@ -27,7 +27,7 @@ module.exports = {
 		}
 
         if (listlength == 1) {
-            finalEmbeds = await createanimeembed(animedata.media[0],false);
+            finalEmbeds = await createanimeembed(animedata.media[0],interaction.guild.id);
             await interaction.editReply({content: "", embeds: [finalEmbeds], components: []});
             return;
         } else {
