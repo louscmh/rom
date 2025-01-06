@@ -31,6 +31,7 @@ async function getUserActivities(userId, page = 1, perPage = 9) {
               genres
               averageScore
               siteUrl
+              id
             }
           }
         }

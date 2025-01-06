@@ -126,12 +126,13 @@ async function checkForUpdates(user, channelId, client) {
 
 	for (let i = latestActivityIndex - 1; i >= 0; i--) {
 		let latestActivity = activities[i];
-		let animedata = await getanimescore(latestActivity.media.id, userId)
 		await delay(1000);
+		// console.log(latestActivity.media.id);
+		let animedata = await getanimescore(latestActivity.media.id, userId)
 		// console.log(animedata);
 
 		if (i == 0) {
-			user.lastReadActivity = latestActivity.createdAt;
+			// user.lastReadActivity = latestActivity.createdAt;
 			await user.save();
 		}
 
