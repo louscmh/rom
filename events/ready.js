@@ -140,14 +140,19 @@ async function checkForUpdates(user, channelId, client) {
 			// console.log(latestActivity);
 			
 			let embed = new EmbedBuilder()
+				.setAuthor({
+				name: latestActivity.media.title.english ?? latestActivity.media.title.romaji ?? latestActivity.media.title.native,
+				url: latestActivity.media.siteUrl,
+				})
 				.setColor(0x1E90FF)
 				.setThumbnail(latestActivity.media.coverImage.large)
 				.setTitle(latestActivity.progress.includes("-") ? "Watched episodes" : "Watched an episode")
+				.setDescription(
+				`• **Average Score:** ${latestActivity.media.meanScore ?? "N.A"}/100
+				• **Episodes:** ${latestActivity.progress}/${latestActivity.media.episodes ?? "N.A"}
+				• **Genres:** ${latestActivity.media.genres.length == 0 ? "N.A" : latestActivity.media.genres.length > 1 ? latestActivity.media.genres.join(", ") : latestActivity.media.genres[0]}`)
 				.addFields(
-					{ name: latestActivity.media.title.english ?? latestActivity.media.title.romaji ?? latestActivity.media.title.native, value: `**Episodes:** ${latestActivity.progress}/${latestActivity.media.episodes}`, inline: true },
 					{ name: 'Time of Activity', value: `<t:${Math.floor(latestActivity.createdAt)}:R>`, inline: false },
-					{ name: 'Community Score', value: `${latestActivity.media.meanScore}/100`, inline: false },
-					{ name: 'Genres', value: `${latestActivity.media.genres.length == 0 ? "N.A" : latestActivity.media.genres.length > 1 ? latestActivity.media.genres.join(", ") : latestActivity.media.genres[0]}`, inline: false },
 				)
 				.setFooter({
 					text: latestActivity.media.season != null ? `Released in ${latestActivity.media.season.charAt(0).toUpperCase() + latestActivity.media.season.slice(1).toLowerCase()} ${latestActivity.media.seasonYear} · ${latestActivity.media.siteUrl}` : `No season data · ${latestActivity.media.siteUrl}`,
@@ -157,15 +162,20 @@ async function checkForUpdates(user, channelId, client) {
 		} else if (latestActivity.status == "completed" && latestActivity.createdAt != null) {
 
 			let embed = new EmbedBuilder()
+				.setAuthor({
+				name: latestActivity.media.title.english ?? latestActivity.media.title.romaji ?? latestActivity.media.title.native,
+				url: latestActivity.media.siteUrl,
+				})
 				.setColor(0x2FBB2F)
-				.setThumbnail(latestActivity.media.coverImage.large) 
+				.setThumbnail(latestActivity.media.coverImage.large)
 				.setTitle("Completed Anime")
+				.setDescription(
+				`• **Average Score:** ${latestActivity.media.meanScore}/100
+				• **Score Given:** ${animedata.score}
+				• **Episodes:** ${latestActivity.media.episodes}/${latestActivity.media.episodes}
+				• **Genres:** ${latestActivity.media.genres.length == 0 ? "N.A" : latestActivity.media.genres.length > 1 ? latestActivity.media.genres.join(", ") : latestActivity.media.genres[0]}`)
 				.addFields(
-					{ name: latestActivity.media.title.english ?? latestActivity.media.title.romaji ?? latestActivity.media.title.native, value: `**Episodes:** ${latestActivity.media.episodes}/${latestActivity.media.episodes}`, inline: true },
 					{ name: 'Time of Activity', value: `<t:${Math.floor(latestActivity.createdAt)}:R>`, inline: false },
-					{ name: 'Score Given', value: `${animedata.score}`, inline: true },
-					{ name: 'Community Score', value: `${latestActivity.media.meanScore}/100`, inline: true },
-					{ name: 'Genres', value: `${latestActivity.media.genres.length == 0 ? "N.A" : latestActivity.media.genres.length > 1 ? latestActivity.media.genres.join(", ") : latestActivity.media.genres[0]}`, inline: false },
 				)
 				.setFooter({
 					text: latestActivity.media.season != null ? `Released in ${latestActivity.media.season.charAt(0).toUpperCase() + latestActivity.media.season.slice(1).toLowerCase()} ${latestActivity.media.seasonYear} · ${latestActivity.media.siteUrl}` : `No season data · ${latestActivity.media.siteUrl}`,
@@ -174,17 +184,22 @@ async function checkForUpdates(user, channelId, client) {
 		} else if (latestActivity.status == "plans to watch" && latestActivity.createdAt != null) {
 
 			let embed = new EmbedBuilder()
+				.setAuthor({
+				name: latestActivity.media.title.english ?? latestActivity.media.title.romaji ?? latestActivity.media.title.native,
+				url: latestActivity.media.siteUrl,
+				})
 				.setColor(0xFFFF00)
 				.setThumbnail(latestActivity.media.coverImage.large) 
 				.setTitle("Plan to watch")
+				.setDescription(
+				`• **Average Score:** ${latestActivity.media.meanScore ?? "N.A"}/100
+				• **Episodes:** 0/${latestActivity.media.episodes ?? "N.A"}
+				• **Genres:** ${latestActivity.media.genres.length == 0 ? "N.A" : latestActivity.media.genres.length > 1 ? latestActivity.media.genres.join(", ") : latestActivity.media.genres[0]}`)
 				.addFields(
-					{ name: latestActivity.media.title.english ?? latestActivity.media.title.romaji ?? latestActivity.media.title.native, value: `**Episodes:** 0/${latestActivity.media.episodes}`, inline: true },
 					{ name: 'Time of Activity', value: `<t:${Math.floor(latestActivity.createdAt)}:R>`, inline: false },
-					{ name: 'Community Score', value: `${latestActivity.media.meanScore}/100`, inline: false },
-					{ name: 'Genres', value: `${latestActivity.media.genres.length == 0 ? "N.A" : latestActivity.media.genres.length > 1 ? latestActivity.media.genres.join(", ") : latestActivity.media.genres[0]}`, inline: false },
 				)
 				.setFooter({
-				  text: latestActivity.media.season != null ? `Released in ${latestActivity.media.season.charAt(0).toUpperCase() + latestActivity.media.season.slice(1).toLowerCase()} ${latestActivity.media.seasonYear} · ${latestActivity.media.siteUrl}` : `No season data · ${latestActivity.media.siteUrl}`,
+					text: latestActivity.media.season != null ? `Released in ${latestActivity.media.season.charAt(0).toUpperCase() + latestActivity.media.season.slice(1).toLowerCase()} ${latestActivity.media.seasonYear} · ${latestActivity.media.siteUrl}` : `No season data · ${latestActivity.media.siteUrl}`,
 				});
 			finalEmbeds.push(embed);
 		}

@@ -176,8 +176,8 @@ async function createanimeembed(anime,compareUser) {
       name: anime.title.english != null ? anime.title.english : anime.title.romaji,
       url: anime.siteUrl,
     })
-    .setDescription(`• **Average Score:** ${anime.meanScore}/100
-      • **Episodes:** ${anime.episodes}
+    .setDescription(`• **Average Score:** ${anime.meanScore ?? "N.A"}/100
+      • **Episodes:** ${anime.episodes ?? "Not Released"}
       ${anime.season == null ? `• **Released in:** N.A` : `• **Released in:** ${anime.season.charAt(0).toUpperCase() + anime.season.slice(1).toLowerCase()} ${anime.seasonYear}`}
       • **Genres:** ${anime.genres.length == 0 ? "N.A" : anime.genres.length > 1 ? anime.genres.join(", ") : anime.genres[0]}
       • **Main Studio:** ${anime.studios.nodes.length > 0 ? anime.studios.nodes[0].name : "N.A"}
