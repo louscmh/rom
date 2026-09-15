@@ -150,10 +150,13 @@ async function checkForUpdates(user, channelId, client) {
 				.setColor(0x1E90FF)
 				.setThumbnail(latestActivity.media.coverImage?.large ?? null)
 				.setTitle(latestActivity.progress?.includes("-") ? "Watched episodes" : "Watched an episode")
-				.setDescription(
-				`• **Average Score:** ${latestActivity.media.meanScore ?? "N.A"}/100
-				• **Episodes:** ${latestActivity.progress}/${latestActivity.media.episodes ?? "N.A"}
-				• **Genres:** ${latestActivity.media.genres?.length ? latestActivity.media.genres.join(", ") : "N.A"}`)
+				// Lines are joined instead of using a multi-line template string, whose source
+				// indentation would show up as leading whitespace on mobile
+				.setDescription([
+					`• **Average Score:** ${latestActivity.media.meanScore ?? "N.A"}/100`,
+					`• **Episodes:** ${latestActivity.progress}/${latestActivity.media.episodes ?? "N.A"}`,
+					`• **Genres:** ${latestActivity.media.genres?.length ? latestActivity.media.genres.join(", ") : "N.A"}`,
+				].join("\n"))
 				.addFields(
 					{ name: 'Time of Activity', value: `<t:${Math.floor(latestActivity.createdAt)}:R>`, inline: false },
 				)
@@ -172,11 +175,12 @@ async function checkForUpdates(user, channelId, client) {
 				.setColor(0x2FBB2F)
 				.setThumbnail(latestActivity.media.coverImage?.large ?? null)
 				.setTitle("Completed Anime")
-				.setDescription(
-				`• **Average Score:** ${latestActivity.media.meanScore ?? "N.A"}/100
-				• **Score Given:** ${animedata?.score || "Not scored"}
-				• **Episodes:** ${latestActivity.media.episodes ?? "N.A"}/${latestActivity.media.episodes ?? "N.A"}
-				• **Genres:** ${latestActivity.media.genres?.length ? latestActivity.media.genres.join(", ") : "N.A"}`)
+				.setDescription([
+					`• **Average Score:** ${latestActivity.media.meanScore ?? "N.A"}/100`,
+					`• **Score Given:** ${animedata?.score || "Not scored"}`,
+					`• **Episodes:** ${latestActivity.media.episodes ?? "N.A"}/${latestActivity.media.episodes ?? "N.A"}`,
+					`• **Genres:** ${latestActivity.media.genres?.length ? latestActivity.media.genres.join(", ") : "N.A"}`,
+				].join("\n"))
 				.addFields(
 					{ name: 'Time of Activity', value: `<t:${Math.floor(latestActivity.createdAt)}:R>`, inline: false },
 				)
@@ -194,10 +198,11 @@ async function checkForUpdates(user, channelId, client) {
 				.setColor(0xFFFF00)
 				.setThumbnail(latestActivity.media.coverImage?.large ?? null) 
 				.setTitle("Plan to watch")
-				.setDescription(
-				`• **Average Score:** ${latestActivity.media.meanScore ?? "N.A"}/100
-				• **Episodes:** 0/${latestActivity.media.episodes ?? "N.A"}
-				• **Genres:** ${latestActivity.media.genres?.length ? latestActivity.media.genres.join(", ") : "N.A"}`)
+				.setDescription([
+					`• **Average Score:** ${latestActivity.media.meanScore ?? "N.A"}/100`,
+					`• **Episodes:** 0/${latestActivity.media.episodes ?? "N.A"}`,
+					`• **Genres:** ${latestActivity.media.genres?.length ? latestActivity.media.genres.join(", ") : "N.A"}`,
+				].join("\n"))
 				.addFields(
 					{ name: 'Time of Activity', value: `<t:${Math.floor(latestActivity.createdAt)}:R>`, inline: false },
 				)

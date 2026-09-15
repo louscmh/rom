@@ -1,4 +1,4 @@
-const { ButtonBuilder, ButtonStyle, ActionRowBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, EmbedBuilder, SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
+const { MessageFlags, ButtonBuilder, ButtonStyle, ActionRowBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, EmbedBuilder, SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
 const { getUserActivities, getUserData } = require('../../functions/anilist.js'); // Import the function from anilist.js
 const { TrackedServer } = require('../../events/ready.js'); // Adjust the path based on your project structure
 
@@ -8,7 +8,7 @@ module.exports = {
 		.setDescription('Set the update channel to the current channel')
 		.setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
 	async execute(interaction) {
-		await interaction.deferReply();
+		await interaction.deferReply({flags: MessageFlags.Ephemeral});
 
 		const existingServer = await TrackedServer.findOne({
 			where: {

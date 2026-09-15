@@ -1,4 +1,4 @@
-const { ButtonBuilder, ButtonStyle, ActionRowBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, EmbedBuilder, SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
+const { MessageFlags, ButtonBuilder, ButtonStyle, ActionRowBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, EmbedBuilder, SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
 const { getUserActivities, getUserData } = require('../../functions/anilist.js'); // Import the function from anilist.js
 const { TrackedUser } = require('../../events/ready.js'); // Adjust the path based on your project structure
 
@@ -15,7 +15,7 @@ module.exports = {
 
         const username = interaction.options.getString('username', true);
         
-		await interaction.deferReply();
+		await interaction.deferReply({flags: MessageFlags.Ephemeral});
         const userdata = await getUserData(username)
 
         if (!userdata) {
