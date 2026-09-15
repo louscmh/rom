@@ -1,4 +1,4 @@
-const { ButtonBuilder, ButtonStyle, ActionRowBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, EmbedBuilder, SlashCommandBuilder } = require('discord.js');
+const { ButtonBuilder, ButtonStyle, ActionRowBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, EmbedBuilder, SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
 const { getUserActivities, getUserData } = require('../../functions/anilist.js'); // Import the function from anilist.js
 const { TrackedUser } = require('../../events/ready.js'); // Adjust the path based on your project structure
 
@@ -9,7 +9,8 @@ module.exports = {
         .addStringOption(option =>
             option.setName('username')
                 .setDescription('The user\'s name on Anilist')
-				.setRequired(true)),
+				.setRequired(true))
+		.setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
 	async execute(interaction) {
 
         const username = interaction.options.getString('username', true);
@@ -81,7 +82,6 @@ module.exports = {
                         serverId: interaction.guild.id,
                         lastReadActivity: 0,
                     });
-                    await TrackedUser.sync({ alter: true })
     
                     // Confirmation Embed
                     const confirmEmbed = new EmbedBuilder()

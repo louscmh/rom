@@ -3,8 +3,11 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { Client, Collection, Events, GatewayIntentBits } = require('discord.js');
 const { token } = require('./config.json');
+const { setClient, reportError } = require('./functions/errorlog.js');
+const { syncDatabase } = require('./events/ready.js');
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
+setClient(client);
 
 client.commands = new Collection();
 client.cooldowns = new Collection();
@@ -33,11 +36,33 @@ const eventFiles = fs.readdirSync(eventsPath).filter(file => file.endsWith('.js'
 for (const file of eventFiles) {
 	const filePath = path.join(eventsPath, file);
 	const event = require(filePath);
+	// Log errors from any handler instead of letting them become unhandled rejections
+	const run = (...args) => Promise.resolve()
+		.then(() => event.execute(...args))
+		.catch(error => reportError(`event ${event.name}`, error));
 	if (event.once) {
-		client.once(event.name, (...args) => event.execute(...args));
+		client.once(event.name, run);
 	} else {
-		client.on(event.name, (...args) => event.execute(...args));
+		client.on(event.name, run);
 	}
 }
 
-client.login(token);
+client.on(Events.Error, error => reportError('client error', error));
+process.on('unhandledRejection', error => reportError('unhandledRejection', error));
+
+(async () => {
+	// Make sure the tables exist before any command or scan touches them
+	try {
+		await syncDatabase();
+	} catch (error) {
+		console.error('Database sync failed, not starting the bot:', error);
+		process.exit(1);
+	}
+
+	try {
+		await client.login(token);
+	} catch (error) {
+		console.error('Login failed, check the token in config.json:', error);
+		process.exit(1);
+	}
+})();

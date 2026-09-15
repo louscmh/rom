@@ -1,11 +1,12 @@
-const { ButtonBuilder, ButtonStyle, ActionRowBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, EmbedBuilder, SlashCommandBuilder } = require('discord.js');
+const { ButtonBuilder, ButtonStyle, ActionRowBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, EmbedBuilder, SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
 const { getUserActivities, getUserData } = require('../../functions/anilist.js'); // Import the function from anilist.js
 const { TrackedUser } = require('../../events/ready.js'); // Adjust the path based on your project structure
 
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('cleartrackeduser')
-		.setDescription('Removes all tracked users in the current server'),
+		.setDescription('Removes all tracked users in the current server')
+		.setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
 	async execute(interaction) {
 
 		// Get the current server (guild) ID

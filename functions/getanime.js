@@ -8,7 +8,7 @@ async function searchanimebytitle(anime, page = 1) {
   const query = `
     query ($search: String!, $page: Int, $perPage: Int = 3, $isMain: Boolean=true) {
     Page(page: $page, perPage: $perPage) {
-      media(search: $search, type: ANIME) {
+      media(search: $search, type: ANIME, isAdult: false) {
         id
         title {
           english
@@ -82,7 +82,7 @@ async function getanimesearchlength(anime) {
   const query = `
     query ($search: String!) {
     Page {
-      media(search: $search, type: ANIME) {
+      media(search: $search, type: ANIME, isAdult: false) {
         id
       }
     }
@@ -201,7 +201,7 @@ async function createanimeembed(anime,compareUser) {
       for (let i = 0; i <= trackedUsers.length - 1; i++) {
         let user = trackedUsers[i];
         let userScore = await getanimescore(anime.id,user.userId);
-        if (userScore.score != 0 && userScore.score != null) {
+        if (userScore?.score) {
           userString += `${user.username} - \`${userScore.score}/${userScore.score < 11 ? 10 : 100}\`\n`
         }
       }

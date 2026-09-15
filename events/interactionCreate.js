@@ -1,4 +1,5 @@
 const { Events, Collection, MessageFlags } = require('discord.js');
+const { reportError, reportWarning } = require('../functions/errorlog.js');
 
 module.exports = {
 	name: Events.InteractionCreate,
@@ -7,6 +8,11 @@ module.exports = {
 
 		const { cooldowns } = interaction.client;
 		const command = interaction.client.commands.get(interaction.commandName);
+
+		if (!command) {
+			await reportWarning('commands', `No command matching ${interaction.commandName} was found. Is it still registered on Discord?`);
+			return;
+		}
 
 		if (!cooldowns.has(command.data.name)) {
 			cooldowns.set(command.data.name, new Collection());
@@ -29,19 +35,20 @@ module.exports = {
 		timestamps.set(interaction.user.id, now);
 		setTimeout(() => timestamps.delete(interaction.user.id), cooldownAmount);
 
-		if (!command) {
-			console.error(`No command matching ${interaction.commandName} was found.`);
-			return;
-		}
-
 		try {
 			await command.execute(interaction);
 		} catch (error) {
-			console.error(error);
-			if (interaction.replied || interaction.deferred) {
-				await interaction.followUp({ content: 'There was an error while executing this command!', ephemeral: true });
-			} else {
-				await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
+			await reportError(`/${interaction.commandName} (by ${interaction.user.username} in ${interaction.guild?.name ?? 'DMs'})`, error);
+			const payload = { content: 'There was an error while executing this command!', flags: MessageFlags.Ephemeral };
+			try {
+				if (interaction.replied || interaction.deferred) {
+					await interaction.followUp(payload);
+				} else {
+					await interaction.reply(payload);
+				}
+			} catch (replyError) {
+				// e.g. the interaction token expired or the reply was already acknowledged
+				console.error('Could not send error reply:', replyError);
 			}
 		}
 	},

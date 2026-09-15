@@ -1,6 +1,7 @@
 const { EmbedBuilder, Events } = require('discord.js');
 const POLL_INTERVAL = 300000; // 5 minutes
 const { getUserActivities, getUserData, getanimescore } = require('../functions/anilist.js'); // Import the function from anilist.js
+const { reportError, reportWarning } = require('../functions/errorlog.js');
 const trackedUsers = {};
 const { Sequelize, DataTypes } = require('sequelize');
 const sequelize = new Sequelize('database', 'user', 'password', {
@@ -54,13 +55,13 @@ const TrackedServer = sequelize.define('TrackedServer', {
 	timestamps: true, // Automatically adds createdAt and updatedAt fields
 });
 
-TrackedUser.sync({ alter: true })
-	.then(() => console.log('TrackedUser table synchronized'))
-	.catch(console.error);
-
-TrackedServer.sync({ alter: true })
-	.then(() => console.log('TrackedServer table synchronized'))
-	.catch(console.error);
+// Creates missing tables only. Called once from index.js before login; it never alters
+// existing tables, so a model change needs a one-off migration instead
+async function syncDatabase() {
+	await TrackedUser.sync();
+	await TrackedServer.sync();
+	console.log('Database tables synchronized');
+}
 
 module.exports = {
 	name: Events.ClientReady,
@@ -86,14 +87,19 @@ module.exports = {
 	TrackedUser,
 	TrackedServer,
 	scan,
+	syncDatabase,
 };
 
 async function checkForUpdates(user, channelId, client) {
 	console.log("Update check initiated");
 	console.log(`User: ${user.username}`);
 	const userdata = await getUserData(user.username);
+	if (!userdata) {
+		await reportWarning('tracker', `Skipping ${user.username}: AniList profile not found or request failed (renamed, deleted, or rate limited?)`);
+		return;
+	}
 	const userId = userdata.id;
-	const avatar = userdata.avatar.large;
+	const avatar = userdata.avatar?.large;
 	const activities = await getUserActivities(userId);
 	let latestActivityIndex = 0;
 	await delay(1000);
@@ -126,15 +132,12 @@ async function checkForUpdates(user, channelId, client) {
 
 	for (let i = latestActivityIndex - 1; i >= 0; i--) {
 		let latestActivity = activities[i];
+		// Media can be null if the entry was removed from AniList
+		if (!latestActivity?.media) continue;
 		await delay(1000);
 		// console.log(latestActivity.media.id);
 		let animedata = await getanimescore(latestActivity.media.id, userId)
 		// console.log(animedata);
-
-		if (i == 0) {
-			user.lastReadActivity = latestActivity.createdAt;
-			await user.save();
-		}
 
 		if (latestActivity.status == "watched episode" && latestActivity.createdAt != null) {
 			// console.log(latestActivity);
@@ -145,12 +148,12 @@ async function checkForUpdates(user, channelId, client) {
 				url: latestActivity.media.siteUrl,
 				})
 				.setColor(0x1E90FF)
-				.setThumbnail(latestActivity.media.coverImage.large)
-				.setTitle(latestActivity.progress.includes("-") ? "Watched episodes" : "Watched an episode")
+				.setThumbnail(latestActivity.media.coverImage?.large ?? null)
+				.setTitle(latestActivity.progress?.includes("-") ? "Watched episodes" : "Watched an episode")
 				.setDescription(
 				`• **Average Score:** ${latestActivity.media.meanScore ?? "N.A"}/100
 				• **Episodes:** ${latestActivity.progress}/${latestActivity.media.episodes ?? "N.A"}
-				• **Genres:** ${latestActivity.media.genres.length == 0 ? "N.A" : latestActivity.media.genres.length > 1 ? latestActivity.media.genres.join(", ") : latestActivity.media.genres[0]}`)
+				• **Genres:** ${latestActivity.media.genres?.length ? latestActivity.media.genres.join(", ") : "N.A"}`)
 				.addFields(
 					{ name: 'Time of Activity', value: `<t:${Math.floor(latestActivity.createdAt)}:R>`, inline: false },
 				)
@@ -167,13 +170,13 @@ async function checkForUpdates(user, channelId, client) {
 				url: latestActivity.media.siteUrl,
 				})
 				.setColor(0x2FBB2F)
-				.setThumbnail(latestActivity.media.coverImage.large)
+				.setThumbnail(latestActivity.media.coverImage?.large ?? null)
 				.setTitle("Completed Anime")
 				.setDescription(
-				`• **Average Score:** ${latestActivity.media.meanScore}/100
-				• **Score Given:** ${animedata.score}
-				• **Episodes:** ${latestActivity.media.episodes}/${latestActivity.media.episodes}
-				• **Genres:** ${latestActivity.media.genres.length == 0 ? "N.A" : latestActivity.media.genres.length > 1 ? latestActivity.media.genres.join(", ") : latestActivity.media.genres[0]}`)
+				`• **Average Score:** ${latestActivity.media.meanScore ?? "N.A"}/100
+				• **Score Given:** ${animedata?.score || "Not scored"}
+				• **Episodes:** ${latestActivity.media.episodes ?? "N.A"}/${latestActivity.media.episodes ?? "N.A"}
+				• **Genres:** ${latestActivity.media.genres?.length ? latestActivity.media.genres.join(", ") : "N.A"}`)
 				.addFields(
 					{ name: 'Time of Activity', value: `<t:${Math.floor(latestActivity.createdAt)}:R>`, inline: false },
 				)
@@ -189,12 +192,12 @@ async function checkForUpdates(user, channelId, client) {
 				url: latestActivity.media.siteUrl,
 				})
 				.setColor(0xFFFF00)
-				.setThumbnail(latestActivity.media.coverImage.large) 
+				.setThumbnail(latestActivity.media.coverImage?.large ?? null) 
 				.setTitle("Plan to watch")
 				.setDescription(
 				`• **Average Score:** ${latestActivity.media.meanScore ?? "N.A"}/100
 				• **Episodes:** 0/${latestActivity.media.episodes ?? "N.A"}
-				• **Genres:** ${latestActivity.media.genres.length == 0 ? "N.A" : latestActivity.media.genres.length > 1 ? latestActivity.media.genres.join(", ") : latestActivity.media.genres[0]}`)
+				• **Genres:** ${latestActivity.media.genres?.length ? latestActivity.media.genres.join(", ") : "N.A"}`)
 				.addFields(
 					{ name: 'Time of Activity', value: `<t:${Math.floor(latestActivity.createdAt)}:R>`, inline: false },
 				)
@@ -205,9 +208,23 @@ async function checkForUpdates(user, channelId, client) {
 		}
 	}
 
+	if (finalEmbeds.length === 1) {
+		// Only the header embed, i.e. none of the new activities have a supported status
+		user.lastReadActivity = activities[0].createdAt;
+		await user.save();
+		console.log(`No displayable updates for ${user.username}, marked as read`);
+		return;
+	}
+
 	console.log(`channel id to send: ${channelId}`)
 	const channel = await client.channels.fetch(channelId);
+	if (!channel?.isTextBased()) {
+		throw new Error(`Channel ${channelId} is missing or not a text channel`);
+	}
 	await channel.send({ content: "", embeds: finalEmbeds, components: [] });
+	// Only mark as read once the updates are actually posted, so a failed send is retried next scan
+	user.lastReadActivity = activities[0].createdAt;
+	await user.save();
 	await channel.send({ content: "** **", embeds: [], components: [] });
 	console.log(`Update for ${user.username} performed`);
 
@@ -215,28 +232,47 @@ async function checkForUpdates(user, channelId, client) {
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+// Prevents the interval and /refreshtrack from scanning at the same time and posting duplicates
+let scanInProgress = false;
+
+// Returns false if skipped because another scan is still running
 async function scan(client) {
-	
-	TrackedUser.sync({ alter: true })
-	.catch(console.error);
+	if (scanInProgress) {
+		console.log('Scan already in progress, skipping');
+		return false;
+	}
+	scanInProgress = true;
 
-	TrackedServer.sync({ alter: true })
-	.catch(console.error);
+	try {
+		let trackedUsers;
+		try {
+			trackedUsers = await TrackedUser.findAll();
+		} catch (error) {
+			await reportError('tracker: scan aborted, could not load tracked users', error);
+			return true;
+		}
 
-	const trackedUsers = await TrackedUser.findAll();
+		console.log(`Scanning ${trackedUsers.length} tracked user(s)`);
 
-	console.log(`users: ${JSON.stringify(trackedUsers)}`);
-
-	for (let i = 0; i <= trackedUsers.length - 1; i++) {
-		console.log("Initial check happened");
-		let user = trackedUsers[i];
-		const trackedServer = await TrackedServer.findOne({
-			where: {
-				serverId: user.serverId
+		for (const user of trackedUsers) {
+			// A failure for one user is logged and skipped so the rest of the scan still runs
+			try {
+				const trackedServer = await TrackedServer.findOne({
+					where: {
+						serverId: user.serverId
+					}
+				});
+				if (!trackedServer?.channelId) {
+					await reportWarning('tracker', `Skipping ${user.username}: no tracking channel set for server ${user.serverId}`);
+					continue;
+				}
+				await checkForUpdates(user, trackedServer.channelId, client);
+			} catch (error) {
+				await reportError(`tracker: update check failed for ${user.username}`, error);
 			}
-		});
-		let channelId = trackedServer.channelId
-		JSON.stringify(user, null, 2)
-		await checkForUpdates(user, channelId, client);
+		}
+		return true;
+	} finally {
+		scanInProgress = false;
 	}
 }

@@ -1,13 +1,13 @@
-const { ButtonBuilder, ButtonStyle, ActionRowBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, EmbedBuilder, SlashCommandBuilder } = require('discord.js');
+const { ButtonBuilder, ButtonStyle, ActionRowBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, EmbedBuilder, SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
 const { getUserActivities, getUserData } = require('../../functions/anilist.js'); // Import the function from anilist.js
 const { TrackedServer } = require('../../events/ready.js'); // Adjust the path based on your project structure
 
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('trackchannel')
-		.setDescription('Set the update channel to the current channel'),
+		.setDescription('Set the update channel to the current channel')
+		.setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
 	async execute(interaction) {
-		console.log(interaction);
 		await interaction.deferReply();
 
 		const existingServer = await TrackedServer.findOne({
@@ -67,7 +67,6 @@ module.exports = {
 						serverId: interaction.guild.id,
 						channelId: interaction.channelId,
 					});
-                    await TrackedServer.sync({ alter: true })
 	
 					// Confirmation Embed
 					const confirmEmbed = new EmbedBuilder()

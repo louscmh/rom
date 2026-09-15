@@ -1,5 +1,6 @@
 const { Events } = require('discord.js');
 const { TrackedServer, TrackedUser } = require('./ready.js'); // Adjust the path based on your project structure
+const { reportError } = require('../functions/errorlog.js');
 
 module.exports = {
 	name: Events.GuildDelete,
@@ -27,7 +28,7 @@ module.exports = {
                     console.log(`No entry found in TrackedUser for ${guild.name} (${guild.id})`);
                 }
             } catch (error) {
-                console.error(`Failed to delete entry for guild ${guild.name} (${guild.id}):`, error);
+                await reportError(`Failed to delete entry for guild ${guild.name} (${guild.id})`, error);
             }
 		})();
 	},

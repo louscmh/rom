@@ -65,7 +65,7 @@ async function getUserActivities(userId, page = 1, perPage = 9) {
     const data = await response.json();
 
     if (response.ok) {
-      return data.data.Page.activities; // Return activities
+      return data.data?.Page?.activities ?? []; // Return activities
     } else {
       console.error('Error:', data);
       return [];
@@ -109,14 +109,14 @@ async function getanimescore(animeid, userid) {
     const data = await response.json();
 
     if (response.ok) {
-      return data.data.MediaList; 
+      return data.data?.MediaList ?? null;
     } else {
       console.error('Error:', data);
-      return [];
+      return null;
     }
   } catch (error) {
     console.error('Error fetching data:', error);
-    return [];
+    return null;
   }
 }
 
@@ -226,12 +226,14 @@ async function getUserData(username) {
 
     if (response.ok) {
       // console.log(data.data.User);
-      return data.data.User;
+      return data.data?.User ?? null;
     } else {
       console.error('Error:', data);
+      return null;
     }
   } catch (error) {
     console.error('Error fetching data:', error);
+    return null;
   }
 }
 

@@ -19,8 +19,6 @@ module.exports = {
         let animedata = await searchanimebytitle(anime,currentPage);
         const listlength = await getanimesearchlength(anime);
         let animeCount = listlength > 3 ? 3 : listlength;
-        console.log(animedata);
-        console.log(`Amount of anime: ${listlength}`);
 
         if (!animedata) {
 			return interaction.editReply('Could not fetch anime data. Please make sure the input resembles the name of the anime you\'re looking for!.');

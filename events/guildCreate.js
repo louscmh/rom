@@ -1,5 +1,6 @@
 const { Events } = require('discord.js');
 const { TrackedServer } = require('./ready.js'); // Adjust the path based on your project structure
+const { reportError } = require('../functions/errorlog.js');
 
 module.exports = {
 	name: Events.GuildCreate,
@@ -20,7 +21,7 @@ module.exports = {
                 await TrackedServer.create({ serverId, channelId });
                 console.log(`TrackedServer entry created for ${guild.name} (${guild.id})`);
             } catch (error) {
-                console.error(`Failed to initialize entry for guild ${guild.name} (${guild.id}):`, error);
+                await reportError(`Failed to initialize entry for guild ${guild.name} (${guild.id})`, error);
             }
 		})();
 	},

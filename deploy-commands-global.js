@@ -3,7 +3,7 @@ const { clientId, token } = require('./config.json');
 const fs = require('node:fs');
 const path = require('node:path');
 
-// Get the target file name from the command line argument
+// Optional: deploy a single command file, e.g. `node deploy-commands-global.js anime.js`
 const targetFileName = process.argv[2];
 
 const commands = [];
@@ -14,8 +14,8 @@ const commandFolders = fs.readdirSync(foldersPath);
 for (const folder of commandFolders) {
 	// Grab all the command files from the commands directory you created earlier
 	const commandsPath = path.join(foldersPath, folder);
-	const commandFiles = !targetFileName 
-		? fs.readdirSync(commandsPath).filter(file => file => file.endsWith('.js')) 
+	const commandFiles = !targetFileName
+		? fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'))
 		: fs.readdirSync(commandsPath).filter(file => file === targetFileName);
 	// Grab the SlashCommandBuilder#toJSON() output of each command's data for deployment
 	for (const file of commandFiles) {
@@ -35,27 +35,22 @@ const rest = new REST().setToken(token);
 // and deploy your commands!
 (async () => {
 	try {
-		console.log('Fetching existing application (/) commands...');
-		const existingCommands = await rest.get(Routes.applicationCommands(clientId));
-		const existingCommandNames = new Set(existingCommands.map(cmd => cmd.name));
-
-		// Filter out commands that already exist
-		const newCommands = commands.filter(cmd => !existingCommandNames.has(cmd.name));
-
-		if (newCommands.length === 0) {
-			console.log('No new commands to add. All commands are already up-to-date.');
-			return;
+		if (targetFileName) {
+			if (commands.length === 0) {
+				console.log(`No command file named ${targetFileName} was found.`);
+				return;
+			}
+			// Posting a command with an existing name updates it in place and leaves other commands untouched
+			for (const command of commands) {
+				await rest.post(Routes.applicationCommands(clientId), { body: command });
+				console.log(`Successfully deployed command: ${command.name}`);
+			}
+		} else {
+			// Overwrite the full set, so changed commands are updated and deleted ones are removed
+			console.log(`Started refreshing ${commands.length} application (/) commands.`);
+			const data = await rest.put(Routes.applicationCommands(clientId), { body: commands });
+			console.log(`Successfully reloaded ${data.length} application (/) commands.`);
 		}
-
-		console.log(`Started adding ${newCommands.length} new application (/) commands.`);
-
-		// Add each new command individually
-		for (const command of newCommands) {
-			await rest.post(Routes.applicationCommands(clientId), { body: command });
-			console.log(`Successfully added command: ${command.name}`);
-		}
-
-		console.log(`Successfully reloaded ${newCommands.length} application (/) commands.`);
 	} catch (error) {
 		// And of course, make sure you catch and log any errors!
 		console.error(error);
