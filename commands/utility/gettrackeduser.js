@@ -1,5 +1,6 @@
 const { EmbedBuilder, SlashCommandBuilder, escapeMarkdown } = require('discord.js');
-const { TrackedUser, TrackedServer } = require('../../events/ready.js'); // Adjust the path based on your project structure
+const { TrackedUser, TrackedServer } = require('../../functions/db/models.js');
+const { getService } = require('../../functions/lists/services.js');
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -14,8 +15,12 @@ module.exports = {
 		const trackedServer = await TrackedServer.findOne({ where: { serverId } });
 
 		const userLines = trackedUsers.map(user => {
+			const service = getService(user.service);
+			const line = `• [${escapeMarkdown(user.username)}](${service.profileUrl(user.username)}) (${service.tag})`;
+			// Activity updates are only read for AniList users
+			if (user.service === 'mal') return line;
 			const lastUpdate = Number(user.lastReadActivity) > 0 ? `<t:${user.lastReadActivity}:R>` : 'none yet';
-			return `• [${escapeMarkdown(user.username)}](https://anilist.co/user/${encodeURIComponent(user.username)}) - last update ${lastUpdate}`;
+			return `${line} - last update ${lastUpdate}`;
 		});
 
 		const embed = new EmbedBuilder()
@@ -26,7 +31,7 @@ module.exports = {
 				name: 'Update channel',
 				value: trackedServer?.channelId ? `<#${trackedServer.channelId}>` : 'Not set, use `/trackchannel`',
 			})
-			.setFooter({ text: 'Data provided by AniList' });
+			.setFooter({ text: 'Data provided by AniList and MyAnimeList' });
 
 		await interaction.reply({ embeds: [embed] });
 	},

@@ -1,6 +1,6 @@
-const { MessageFlags, ButtonBuilder, ButtonStyle, ActionRowBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, EmbedBuilder, SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
-const { getUserActivities, getUserData } = require('../../functions/anilist.js'); // Import the function from anilist.js
-const { TrackedServer } = require('../../events/ready.js'); // Adjust the path based on your project structure
+const { MessageFlags, EmbedBuilder, SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
+const { TrackedServer } = require('../../functions/db/models.js');
+const { askConfirmation } = require('../../functions/ui/confirm.js');
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -37,54 +37,26 @@ module.exports = {
 			.setColor(0x1E90FF) // Set a color for the embed
 			.setDescription(`The current server is not being tracked at the moment. Track server and current channel?`)
 
-			const buttons = new ActionRowBuilder()
-			.addComponents(
-				new ButtonBuilder()
-					.setCustomId('yes_button')
-					.setLabel('Yes')
-					.setStyle(ButtonStyle.Success), // Green button
-				new ButtonBuilder()
-					.setCustomId('no_button')
-					.setLabel('No')
-					.setStyle(ButtonStyle.Danger) // Red button
-			);
+			const confirmed = await askConfirmation(interaction, { embeds: [embed] });
 
-			const response = await interaction.editReply({
-				content: '',
-				embeds: [embed],
-				components: [buttons],
-			});
-	
-			const collectorFilter = i => i.user.id === interaction.user.id;
-			let failText = 'Confirmation not received, cancelling';
+			if (confirmed === null) {
+				await interaction.editReply({ content: 'Confirmation not received, cancelling', embeds: [], components: [] });
+			} else if (!confirmed) {
+				await interaction.editReply({ content: 'Action cancelled.', embeds: [], components: [] });
+			} else {
+				// Store the tracked server in the database
+				await TrackedServer.create({
+					serverId: interaction.guild.id,
+					channelId: interaction.channelId,
+				});
 
-			try {
-				const confirmation = await response.awaitMessageComponent({ filter: collectorFilter, time: 30_000 });
-	
-				if (confirmation.customId === 'yes_button') {
-					// Store the tracked user in the database
-					await TrackedServer.create({
-						serverId: interaction.guild.id,
-						channelId: interaction.channelId,
-					});
-	
-					// Confirmation Embed
-					const confirmEmbed = new EmbedBuilder()
-						.setColor(0x1E90FF)
-						.setDescription(`Server and current channel has been successfully added to the tracking system.`)
-						.setTimestamp();
-	
-					await interaction.editReply({ content: null, embeds: [confirmEmbed], components: [] });
+				// Confirmation Embed
+				const confirmEmbed = new EmbedBuilder()
+					.setColor(0x1E90FF)
+					.setDescription(`Server and current channel has been successfully added to the tracking system.`)
+					.setTimestamp();
 
-				} else if (confirmation.customId === 'no_button') {
-
-					await interaction.editReply({ content: 'Action cancelled.', embeds: [], components: [] });
-			
-				}
-			} catch (e) {
-
-				await interaction.editReply({ content: failText, embeds: [], components: [] });
-
+				await interaction.editReply({ content: null, embeds: [confirmEmbed], components: [] });
 			}
 		} else if (existingServer && existingServer.channelId == interaction.channelId) {
 

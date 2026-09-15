@@ -1,5 +1,5 @@
 const { Events } = require('discord.js');
-const { TrackedServer } = require('./ready.js'); // Adjust the path based on your project structure
+const { TrackedServer } = require('../functions/db/models.js');
 const { reportError } = require('../functions/errorlog.js');
 
 module.exports = {

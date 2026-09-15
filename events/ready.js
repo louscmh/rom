@@ -1,67 +1,9 @@
 const { EmbedBuilder, Events } = require('discord.js');
 const POLL_INTERVAL = 300000; // 5 minutes
-const { getUserActivities, getUserData, getanimescore } = require('../functions/anilist.js'); // Import the function from anilist.js
+const { getUserActivities, getUserByName, getAnimeScore } = require('../functions/anilist/queries.js');
+const { TrackedUser, TrackedServer } = require('../functions/db/models.js');
+const { titleOf, genresText, releaseFooterText } = require('../functions/format/media.js');
 const { reportError, reportWarning } = require('../functions/errorlog.js');
-const trackedUsers = {};
-const { Sequelize, DataTypes } = require('sequelize');
-const sequelize = new Sequelize('database', 'user', 'password', {
-	host: 'localhost',
-	dialect: 'sqlite',
-	logging: false,
-	storage: 'database.sqlite',
-});
-
-const TrackedUser = sequelize.define('TrackedUser', {
-    id: {
-        type: DataTypes.INTEGER,
-        primaryKey: true,
-        autoIncrement: true, // Automatically increment the ID
-    },
-	userId: {
-		type: DataTypes.STRING,
-		allowNull: false,
-	},
-	username: {
-		type: DataTypes.STRING,
-		allowNull: false,
-	},
-	serverId: {
-		type: DataTypes.STRING,
-		allowNull: false,
-	},
-	lastReadActivity: {
-		type: DataTypes.STRING,
-		allowNull: true,
-	},
-}, {
-	timestamps: true, // Automatically adds createdAt and updatedAt fields
-});
-
-const TrackedServer = sequelize.define('TrackedServer', {
-    id: {
-        type: DataTypes.INTEGER,
-        primaryKey: true,
-        autoIncrement: true, // Automatically increment the ID
-    },
-	serverId: {
-		type: DataTypes.STRING,
-		allowNull: false,
-	},
-	channelId: {
-		type: DataTypes.STRING,
-		allowNull: true,
-	},
-}, {
-	timestamps: true, // Automatically adds createdAt and updatedAt fields
-});
-
-// Creates missing tables only. Called once from index.js before login; it never alters
-// existing tables, so a model change needs a one-off migration instead
-async function syncDatabase() {
-	await TrackedUser.sync();
-	await TrackedServer.sync();
-	console.log('Database tables synchronized');
-}
 
 module.exports = {
 	name: Events.ClientReady,
@@ -84,18 +26,16 @@ module.exports = {
 			}
 		})();
 	},
-	TrackedUser,
-	TrackedServer,
 	scan,
-	syncDatabase,
 };
 
 async function checkForUpdates(user, channelId, client) {
 	console.log("Update check initiated");
 	console.log(`User: ${user.username}`);
-	const userdata = await getUserData(user.username);
+	// Request failures (e.g. rate limits) throw and are reported by scan()
+	const userdata = await getUserByName(user.username);
 	if (!userdata) {
-		await reportWarning('tracker', `Skipping ${user.username}: AniList profile not found or request failed (renamed, deleted, or rate limited?)`);
+		await reportWarning('tracker', `Skipping ${user.username}: AniList profile not found (renamed, deleted, or made private?)`);
 		return;
 	}
 	const userId = userdata.id;
@@ -136,7 +76,7 @@ async function checkForUpdates(user, channelId, client) {
 		if (!latestActivity?.media) continue;
 		await delay(1000);
 		// console.log(latestActivity.media.id);
-		let animedata = await getanimescore(latestActivity.media.id, userId)
+		let animedata = await getAnimeScore(latestActivity.media.id, userId)
 		// console.log(animedata);
 
 		if (latestActivity.status == "watched episode" && latestActivity.createdAt != null) {
@@ -144,7 +84,7 @@ async function checkForUpdates(user, channelId, client) {
 			
 			let embed = new EmbedBuilder()
 				.setAuthor({
-				name: latestActivity.media.title.english ?? latestActivity.media.title.romaji ?? latestActivity.media.title.native,
+				name: titleOf(latestActivity.media),
 				url: latestActivity.media.siteUrl,
 				})
 				.setColor(0x1E90FF)
@@ -155,13 +95,13 @@ async function checkForUpdates(user, channelId, client) {
 				.setDescription([
 					`• **Average Score:** ${latestActivity.media.meanScore ?? "N.A"}/100`,
 					`• **Episodes:** ${latestActivity.progress}/${latestActivity.media.episodes ?? "N.A"}`,
-					`• **Genres:** ${latestActivity.media.genres?.length ? latestActivity.media.genres.join(", ") : "N.A"}`,
+					`• **Genres:** ${genresText(latestActivity.media)}`,
 				].join("\n"))
 				.addFields(
 					{ name: 'Time of Activity', value: `<t:${Math.floor(latestActivity.createdAt)}:R>`, inline: false },
 				)
 				.setFooter({
-					text: latestActivity.media.season != null ? `Released in ${latestActivity.media.season.charAt(0).toUpperCase() + latestActivity.media.season.slice(1).toLowerCase()} ${latestActivity.media.seasonYear} · ${latestActivity.media.siteUrl}` : `No season data · ${latestActivity.media.siteUrl}`,
+					text: releaseFooterText(latestActivity.media),
 				});
 			finalEmbeds.push(embed);
 
@@ -169,7 +109,7 @@ async function checkForUpdates(user, channelId, client) {
 
 			let embed = new EmbedBuilder()
 				.setAuthor({
-				name: latestActivity.media.title.english ?? latestActivity.media.title.romaji ?? latestActivity.media.title.native,
+				name: titleOf(latestActivity.media),
 				url: latestActivity.media.siteUrl,
 				})
 				.setColor(0x2FBB2F)
@@ -179,20 +119,20 @@ async function checkForUpdates(user, channelId, client) {
 					`• **Average Score:** ${latestActivity.media.meanScore ?? "N.A"}/100`,
 					`• **Score Given:** ${animedata?.score || "Not scored"}`,
 					`• **Episodes:** ${latestActivity.media.episodes ?? "N.A"}/${latestActivity.media.episodes ?? "N.A"}`,
-					`• **Genres:** ${latestActivity.media.genres?.length ? latestActivity.media.genres.join(", ") : "N.A"}`,
+					`• **Genres:** ${genresText(latestActivity.media)}`,
 				].join("\n"))
 				.addFields(
 					{ name: 'Time of Activity', value: `<t:${Math.floor(latestActivity.createdAt)}:R>`, inline: false },
 				)
 				.setFooter({
-					text: latestActivity.media.season != null ? `Released in ${latestActivity.media.season.charAt(0).toUpperCase() + latestActivity.media.season.slice(1).toLowerCase()} ${latestActivity.media.seasonYear} · ${latestActivity.media.siteUrl}` : `No season data · ${latestActivity.media.siteUrl}`,
+					text: releaseFooterText(latestActivity.media),
 				});
 			finalEmbeds.push(embed);
 		} else if (latestActivity.status == "plans to watch" && latestActivity.createdAt != null) {
 
 			let embed = new EmbedBuilder()
 				.setAuthor({
-				name: latestActivity.media.title.english ?? latestActivity.media.title.romaji ?? latestActivity.media.title.native,
+				name: titleOf(latestActivity.media),
 				url: latestActivity.media.siteUrl,
 				})
 				.setColor(0xFFFF00)
@@ -201,13 +141,13 @@ async function checkForUpdates(user, channelId, client) {
 				.setDescription([
 					`• **Average Score:** ${latestActivity.media.meanScore ?? "N.A"}/100`,
 					`• **Episodes:** 0/${latestActivity.media.episodes ?? "N.A"}`,
-					`• **Genres:** ${latestActivity.media.genres?.length ? latestActivity.media.genres.join(", ") : "N.A"}`,
+					`• **Genres:** ${genresText(latestActivity.media)}`,
 				].join("\n"))
 				.addFields(
 					{ name: 'Time of Activity', value: `<t:${Math.floor(latestActivity.createdAt)}:R>`, inline: false },
 				)
 				.setFooter({
-					text: latestActivity.media.season != null ? `Released in ${latestActivity.media.season.charAt(0).toUpperCase() + latestActivity.media.season.slice(1).toLowerCase()} ${latestActivity.media.seasonYear} · ${latestActivity.media.siteUrl}` : `No season data · ${latestActivity.media.siteUrl}`,
+					text: releaseFooterText(latestActivity.media),
 				});
 			finalEmbeds.push(embed);
 		}
@@ -251,7 +191,8 @@ async function scan(client) {
 	try {
 		let trackedUsers;
 		try {
-			trackedUsers = await TrackedUser.findAll();
+			// Activity updates come from AniList's activity feed; MAL users are only used for server scores
+			trackedUsers = await TrackedUser.findAll({ where: { service: 'anilist' } });
 		} catch (error) {
 			await reportError('tracker: scan aborted, could not load tracked users', error);
 			return true;

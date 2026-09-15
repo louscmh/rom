@@ -4,7 +4,7 @@ const path = require('node:path');
 const { Client, Collection, Events, GatewayIntentBits } = require('discord.js');
 const { token } = require('./config.json');
 const { setClient, reportError } = require('./functions/errorlog.js');
-const { syncDatabase } = require('./events/ready.js');
+const { syncDatabase } = require('./functions/db/models.js');
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 setClient(client);

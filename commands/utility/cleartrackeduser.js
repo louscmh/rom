@@ -1,6 +1,5 @@
-const { ButtonBuilder, ButtonStyle, ActionRowBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, EmbedBuilder, SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
-const { getUserActivities, getUserData } = require('../../functions/anilist.js'); // Import the function from anilist.js
-const { TrackedUser } = require('../../events/ready.js'); // Adjust the path based on your project structure
+const { EmbedBuilder, SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
+const { TrackedUser } = require('../../functions/db/models.js');
 
 module.exports = {
 	data: new SlashCommandBuilder()

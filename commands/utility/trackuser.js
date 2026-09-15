@@ -1,102 +1,106 @@
-const { MessageFlags, ButtonBuilder, ButtonStyle, ActionRowBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, EmbedBuilder, SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
-const { getUserActivities, getUserData } = require('../../functions/anilist.js'); // Import the function from anilist.js
-const { TrackedUser } = require('../../events/ready.js'); // Adjust the path based on your project structure
+const { MessageFlags, EmbedBuilder, SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
+const { getUserByName } = require('../../functions/anilist/queries.js');
+const { mal } = require('../../functions/mal/client.js');
+const { getMalAnimeList } = require('../../functions/mal/queries.js');
+const { TrackedUser } = require('../../functions/db/models.js');
+const { buildProfileEmbed, buildMalProfileEmbed } = require('../../functions/embeds/profile.js');
+const { getService } = require('../../functions/lists/services.js');
+const { askConfirmation } = require('../../functions/ui/confirm.js');
 
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('trackuser')
-		.setDescription('Track a user\'s Anilist using their username')
-        .addStringOption(option =>
-            option.setName('username')
-                .setDescription('The user\'s name on Anilist')
+		.setDescription('Track a user\'s AniList or MyAnimeList using their username')
+		.addStringOption(option =>
+			option.setName('username')
+				.setDescription('The user\'s name on AniList or MyAnimeList')
 				.setRequired(true))
+		.addStringOption(option =>
+			option.setName('service')
+				.setDescription('Which site the username is from (default: AniList)')
+				.addChoices(
+					{ name: 'AniList', value: 'anilist' },
+					{ name: 'MyAnimeList', value: 'mal' },
+				))
 		.setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
 	async execute(interaction) {
+		const username = interaction.options.getString('username', true);
+		const service = interaction.options.getString('service') ?? 'anilist';
 
-        const username = interaction.options.getString('username', true);
-        
-		await interaction.deferReply({flags: MessageFlags.Ephemeral});
-        const userdata = await getUserData(username)
+		await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
-        if (!userdata) {
-			return interaction.editReply('Could not fetch user data. Please make sure the username is correct.');
+		const profile = service === 'mal' ? await findMalProfile(username) : await findAniListProfile(username);
+		if (profile.error) {
+			return interaction.editReply(profile.error);
 		}
-        // console.log(userdata)
 
-        // Create an embed
-		const embed = new EmbedBuilder()
-        .setColor(0x1E90FF) // Set a color for the embed
-        .setTitle(`${userdata.name}'s Profile`) // User's name as the title
-        .setThumbnail(userdata.avatar.large) // User's profile picture
-        .addFields(
-            { name: 'Anime Watched', value: `${userdata.statistics.anime.count}`, inline: true },
-            { name: 'Mean Anime Score', value: `${userdata.statistics.anime.meanScore ?? 'N/A'}`, inline: true },
-            { name: 'Manga Read', value: `${userdata.statistics.manga.count}`, inline: true },
-            { name: 'Mean Manga Score', value: `${userdata.statistics.manga.meanScore ?? 'N/A'}`, inline: true }
-        )
-        .setFooter({ text: 'Data provided by AniList' })
-        .setTimestamp(); // Add a timestamp
+		const confirmed = await askConfirmation(interaction, {
+			content: `Confirmation to track this ${getService(service).name} in this server?`,
+			embeds: [profile.embed],
+		});
 
-        // Create "Yes" and "No" buttons
-		const buttons = new ActionRowBuilder()
-        .addComponents(
-            new ButtonBuilder()
-                .setCustomId('yes_button')
-                .setLabel('Yes')
-                .setStyle(ButtonStyle.Success), // Green button
-            new ButtonBuilder()
-                .setCustomId('no_button')
-                .setLabel('No')
-                .setStyle(ButtonStyle.Danger) // Red button
-        );
+		if (confirmed === null) {
+			return interaction.editReply({ content: 'Confirmation not received, cancelling', embeds: [], components: [] });
+		}
+		if (!confirmed) {
+			return interaction.editReply({ content: 'Action cancelled.', embeds: [], components: [] });
+		}
 
-        // Send the initial message with the embed and buttons
-        const response = await interaction.editReply({
-            content: 'Confirmation to track this AniList in this server?',
-            embeds: [embed],
-            components: [buttons],
-        });
+		const existingUser = await TrackedUser.findOne({
+			where: {
+				serverId: interaction.guild.id,
+				userId: profile.userId,
+				service,
+			},
+		});
 
-        const collectorFilter = i => i.user.id === interaction.user.id;
-        let failText = 'Confirmation not received, cancelling';
+		if (existingUser) {
+			return interaction.editReply({ content: 'The user has already been tracked!', embeds: [], components: [] });
+		}
 
-        try {
-            const confirmation = await response.awaitMessageComponent({ filter: collectorFilter, time: 30_000 });
-            // console.log(confirmation.customId);
+		await TrackedUser.create({
+			userId: profile.userId,
+			username: profile.username,
+			serverId: interaction.guild.id,
+			lastReadActivity: 0,
+			service,
+		});
 
-            if (confirmation.customId === 'yes_button') {
-                
-                const existingUser = await TrackedUser.findOne({
-                    where: {
-                        serverId: interaction.guild.id,
-                        userId: userdata.id,
-                    },
-                });
-                
-                if (existingUser) {
-                    await interaction.editReply({ content: 'The user has already been tracked!', embeds: [], components: [] });
-                } else {
-                    await TrackedUser.create({
-                        userId: userdata.id,
-                        username: userdata.name, 
-                        serverId: interaction.guild.id,
-                        lastReadActivity: 0,
-                    });
-    
-                    // Confirmation Embed
-                    const confirmEmbed = new EmbedBuilder()
-                        .setColor(0x1E90FF)
-                        .setTitle('User Added Successfully!')
-                        .setDescription(`${userdata.name} has been successfully added to the tracking system.`)
-                        .setTimestamp();
-    
-                    await interaction.editReply({ content: null, embeds: [confirmEmbed], components: [] });
-                }
-			} else if (confirmation.customId === 'no_button') {
-				await interaction.editReply({ content: 'Action cancelled.', embeds: [], components: [] });
-			}
-        } catch (e) {
-            await interaction.editReply({ content: failText, embeds: [], components: [] });
-        }
+		const confirmEmbed = new EmbedBuilder()
+			.setColor(0x1E90FF)
+			.setTitle('User Added Successfully!')
+			.setDescription(`${profile.username} has been successfully added to the tracking system.`)
+			.setTimestamp();
+
+		await interaction.editReply({ content: null, embeds: [confirmEmbed], components: [] });
 	},
 };
+
+// Each returns { userId, username, embed } for the confirmation, or { error } to show instead
+
+async function findAniListProfile(username) {
+	const userdata = await getUserByName(username);
+	if (!userdata) {
+		return { error: 'Could not fetch user data. Please make sure the username is correct.' };
+	}
+	return { userId: userdata.id, username: userdata.name, embed: buildProfileEmbed(userdata) };
+}
+
+async function findMalProfile(username) {
+	if (!mal.isConfigured) {
+		return { error: 'MyAnimeList support isn\'t configured on this bot.' };
+	}
+
+	let entries;
+	try {
+		entries = await getMalAnimeList(username);
+	} catch (error) {
+		if (error.status === 404) {
+			return { error: 'Could not find that MyAnimeList user. Please make sure the username is correct.' };
+		}
+		throw error;
+	}
+
+	// MAL usernames are case-insensitive, so the id is lowercased to catch duplicates
+	return { userId: username.toLowerCase(), username, embed: buildMalProfileEmbed(username, entries) };
+}
