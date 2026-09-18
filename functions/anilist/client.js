@@ -1,6 +1,8 @@
 const ENDPOINT = 'https://graphql.anilist.co';
 // Longest Retry-After we are willing to wait out before giving up on a rate-limited request
 const MAX_RETRY_WAIT_SECONDS = 60;
+// Wait before retrying a request that never got a response (timeout, DNS failure, etc.)
+const NETWORK_RETRY_WAIT_SECONDS = 5;
 
 class AniListError extends Error {
   constructor(status, message) {
@@ -17,9 +19,18 @@ class AniListClient {
   }
 
   // Runs a GraphQL query and returns its `data`. Throws AniListError on any failure.
-  // A rate-limited request (429) is retried once if AniList says how long to wait.
+  // A request that can't reach AniList is retried once, and a rate-limited request (429) is
+  // retried once if AniList says how long to wait.
   async query(query, variables = {}) {
-    let response = await this.#send(query, variables);
+    let response;
+    try {
+      response = await this.#send(query, variables);
+    } catch (error) {
+      if (error.status !== 0) throw error;
+      console.warn(`${error.message}, retrying in ${NETWORK_RETRY_WAIT_SECONDS}s`);
+      await new Promise((resolve) => setTimeout(resolve, NETWORK_RETRY_WAIT_SECONDS * 1000));
+      response = await this.#send(query, variables);
+    }
 
     if (response.status === 429) {
       const waitSeconds = Number(response.headers.get('retry-after'));
@@ -44,7 +55,10 @@ class AniListClient {
         body: JSON.stringify({ query, variables }),
       });
     } catch (error) {
-      throw new AniListError(0, `Could not reach AniList: ${error.message}`);
+      // fetch's own message is just "fetch failed"; the cause code (ETIMEDOUT, ENOTFOUND, ...) says why
+      const reason = error.cause?.code || error.cause?.message;
+      const cause = reason ? ` (${reason})` : '';
+      throw new AniListError(0, `Could not reach AniList: ${error.message}${cause}`);
     }
   }
 

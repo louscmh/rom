@@ -1,10 +1,15 @@
 // Require the necessary discord.js classes
 const fs = require('node:fs');
+const net = require('node:net');
 const path = require('node:path');
 const { Client, Collection, Events, GatewayIntentBits } = require('discord.js');
 const { token } = require('./config.json');
 const { setClient, reportError } = require('./functions/errorlog.js');
 const { syncDatabase } = require('./functions/db/models.js');
+
+// Node gives each IPv4/IPv6 connection attempt only 250ms by default; with no IPv6 route and a slow
+// handshake, every attempt gets cut off and fetch fails. Allow slower connections to complete.
+net.setDefaultAutoSelectFamilyAttemptTimeout(2000);
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 setClient(client);
